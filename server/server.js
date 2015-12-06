@@ -5,6 +5,8 @@ var players = {};
 var Msgs = require('../Msgs');
 var HeroDB = require('./HeroDB');
 
+var _ = require('underscore');
+
 var nextPlayerID = (function() {
 	var n = 0;
 	return function() {
@@ -21,11 +23,32 @@ function PlayerState(id, playerName, pos) {
 }
 
 var msgRouter = {};
-msgRouter['SpawnMessage'] = function(ws, message) {
+msgRouter['SpawnMsg'] = function(ws, message) {
 	var id = nextPlayerID();
 	var ps = new PlayerState(id, message.playerName, [Math.random() * 550, Math.random()* 400]);
-	players[id] = {ws: ws, ps: ps};
-	ws.send(Msgs.SpawnGrantedMsg(ps));
+	players[id] = {id: id, ws: ws, ps: ps};
+	var others =[];
+	for (var i in players) {
+		if (players[i].id !== id) {
+			others.push(players[i].ps);
+		}
+	}
+
+
+	ws.send(Msgs.SpawnGrantedMsg(ps, others));
+	_.forEach(players, function(player) {
+		if (player.ps.id !== id) {
+			player.ws.send(Msgs.PlayerJoinedMsg(ps));
+		}
+	});
+}
+
+msgRouter['PlayerMoveReqMsg'] = function(ws, message) {
+	_.forEach(players, function (player) {
+		if (player.ps.id !== message.id) {
+			player.ws.send(Msgs.PlayerMoveCommandMsg(message.id, message.moveX, message.moveY))
+		}
+	})
 }
 
 

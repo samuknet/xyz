@@ -4,10 +4,10 @@ var gameObjects = [];
 var Msgs = require('./Msgs.js');
 
 var myPlayer;
-
+var otherPlayers = {};
 
 function WS(port, onOpen) {
-	var ws = new WebSocket('ws://localhost:' + port);
+	var ws = new WebSocket('ws://192.168.1.6:' + port);
 	ws.addEventListener('open', function() {
 		onOpen();
 
@@ -19,13 +19,31 @@ function WS(port, onOpen) {
 			if (!myPlayer) {
 				myPlayer = new Player(JSON.parse(message.playerState));
 				addChild(myPlayer);
+
+				_.forEach(JSON.parse(message.otherPlayerStates), function(otherPlayerState) {
+					var otherPlayer = new Player(otherPlayerState);
+					otherPlayers[otherPlayer.id] = otherPlayer;
+					addChild(otherPlayer);
+				})
+
 			}
+		} else if (message.type === 'PlayerJoinedMsg') {
+			var otherPlayer = new Player(JSON.parse(message.playerState));
+			otherPlayers[otherPlayer.id] = otherPlayer;
+			addChild(otherPlayer);
+		} else if (message.type === 'PlayerMoveCommandMsg') {
+			console.log(otherPlayers);
+			otherPlayers[message.id].moveTo(message.moveX, message.moveY);
 		}
 	})
 
 	this.spawnRequest = function (heroName, playerName) {
 		ws.send(Msgs.SpawnRequestMsg(heroName, playerName));
 	};
+
+	this.PlayerMoveReq = function (moveX, moveY) {
+		ws.send(Msgs.PlayerMoveReqMsg(myPlayer.id, moveX, moveY));
+	}
 }
 var net;
 
@@ -54,6 +72,7 @@ function onLoad() {
 	var mouseX, mouseY; 
 	stage.on('stagemousedown', function(evt) {
 		myPlayer.moveTo(evt.stageX, evt.stageY);
+		net.PlayerMoveReq(evt.stageX, evt.stageY)
 	});
 	stage.on('stagemousemove', function(evt) {
 		mouseX = evt.stageX;

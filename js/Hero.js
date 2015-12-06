@@ -42,7 +42,7 @@ var MysticShot = (function() {
 var Ez = (function () {
 	var ezSkills  = new Skills();
 
-	ezSkills.Q = new Skill('Mystic Shot', 0, function (player, mouseX, mouseY) {
+	ezSkills.Q = new Skill('Mystic Shot', 1000, function (player, mouseX, mouseY) {
 		var proj = new Projectile(MysticShot, player, mouseX, mouseY);
 		addChild(proj);
 	});
